@@ -32,6 +32,12 @@ var upCmd = &cobra.Command{
 		}
 		logger.Info("force update = %t", isForceUpdate)
 
+		isUseAgent, err := cmd.Flags().GetBool("ssh-agent")
+		if err != nil {
+			return err
+		}
+		logger.Info("use ssh agent = %t", isUseAgent)
+
 		identityFile, err := cmd.Flags().GetString("identity-file")
 		if err != nil {
 			return err
@@ -56,7 +62,7 @@ var upCmd = &cobra.Command{
 			return err
 		}
 
-		authProvider = helper.NewAuthProvider(filepath.Join(homeDir, ".ssh", identityFile), password)
+		authProvider = helper.NewAuthProvider(filepath.Join(homeDir, ".ssh", identityFile), password, isUseAgent)
 		updateService := service.NewSync(authProvider, homeDir, pwd, pwd)
 		return updateService.Resolve(isForceUpdate)
 	},
@@ -66,4 +72,5 @@ func initDepCmd() {
 	upCmd.PersistentFlags().BoolP("force", "f", false, "update locked file and .proto vendors")
 	upCmd.PersistentFlags().StringP("identity-file", "i", "id_rsa", "set the identity file for SSH")
 	upCmd.PersistentFlags().StringP("password", "p", "", "set the password for SSH")
+	upCmd.PersistentFlags().BoolP("ssh-agent", "a", false, "use ssh-agent for authentication")
 }

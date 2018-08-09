@@ -18,11 +18,17 @@ type AuthProviderWithSSH struct {
 	password string
 }
 
+type AuthProviderWithSSHAgent struct {
+}
+
 type AuthProviderHTTPS struct {
 }
 
-func NewAuthProvider(pemFile, password string) AuthProvider {
-	if pemFile != "" {
+func NewAuthProvider(pemFile, password string, useAgent bool) AuthProvider {
+	if useAgent {
+		logger.Info("use SSH protocol with agent")
+		return &AuthProviderWithSSHAgent{}
+	} else if pemFile != "" {
 		logger.Info("use SSH protocol")
 		return &AuthProviderWithSSH{
 			pemFile:  pemFile,
@@ -44,6 +50,22 @@ func (p *AuthProviderWithSSH) GetRepositoryURL(reponame string) string {
 
 func (p *AuthProviderWithSSH) AuthMethod() transport.AuthMethod {
 	am, err := ssh.NewPublicKeysFromFile("git", p.pemFile, p.password)
+	if err != nil {
+		panic(err)
+	}
+	return am
+}
+
+func (p *AuthProviderWithSSHAgent) GetRepositoryURL(reponame string) string {
+	ep, err := transport.NewEndpoint("ssh://" + reponame + ".git")
+	if err != nil {
+		panic(err)
+	}
+	return ep.String()
+}
+
+func (p *AuthProviderWithSSHAgent) AuthMethod() transport.AuthMethod {
+	am, err := ssh.NewSSHAgentAuth("git")
 	if err != nil {
 		panic(err)
 	}
